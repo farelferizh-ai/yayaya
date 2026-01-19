@@ -1,555 +1,498 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // State awal
-    let currentQueueNumber = 1;
-    let callHistory = [];
-    let waitingQueue = [];
-    let operators = [
-        { id: 1, name: "Operator 1 - Pendaftaran", status: "available", currentNumber: null },
-        { id: 2, name: "Operator 2 - Verifikasi Berkas", status: "available", currentNumber: null },
-        { id: 3, name: "Operator 3 - Tes Akademik", status: "available", currentNumber: null },
-        { id: 4, name: "Operator 4 - Wawancara", status: "available", currentNumber: null },
-        { id: 5, name: "Operator 5 - Pembayaran", status: "available", currentNumber: null },
-        { id: 6, name: "Operator 6 - Konsultasi", status: "available", currentNumber: null },
-        { id: 7, name: "Operator 7 - Pengumuman", status: "available", currentNumber: null },
-        { id: 8, name: "Operator 8 - Administrator", status: "available", currentNumber: null }
-    ];
-    
-    // Settings suara
-    let useFemaleVoice = true;
-    let volume = 0.8;
-    
-    // DOM Elements
-    const elements = {
-        queueNumber: document.getElementById('queue-number'),
-        operator: document.getElementById('operator'),
-        callBtn: document.getElementById('call-btn'),
-        nextBtn: document.getElementById('next-btn'),
-        skipBtn: document.getElementById('skip-btn'),
-        decreaseBtn: document.getElementById('decrease-number'),
-        increaseBtn: document.getElementById('increase-number'),
-        resetBtn: document.getElementById('reset-number'),
-        volumeControl: document.getElementById('volume-control'),
-        toggleVoiceBtn: document.getElementById('toggle-voice-btn'),
-        clearHistoryBtn: document.getElementById('clear-history'),
-        addQueueBtn: document.getElementById('add-queue-btn'),
-        generateQueueBtn: document.getElementById('generate-queue-btn'),
-        
-        // Display
-        currentNumber: document.getElementById('current-number'),
-        currentOperator: document.getElementById('current-operator'),
-        currentTime: document.getElementById('current-time'),
-        statusIndicator: document.getElementById('status-indicator'),
-        statusText: document.getElementById('status-text'),
-        callHistory: document.getElementById('call-history'),
-        operatorsContainer: document.getElementById('operators-container'),
-        queueList: document.getElementById('queue-list'),
-        dateTime: document.getElementById('date-time'),
-        totalQueue: document.getElementById('total-queue'),
-        voiceTypeIndicator: document.getElementById('voice-type-indicator')
-    };
-    
-    // Initialize
-    init();
-    
-    function init() {
-        loadFromLocalStorage();
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
-        renderOperators();
-        renderWaitingQueue();
-        updateTotalQueue();
-        setupEventListeners();
-        generateInitialQueue();
-        setupSpeech();
+/* Reset dan Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 10px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Header */
+header {
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    color: white;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    background-color: white;
+    color: #2a5298;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.header-text h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.header-text h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.header-text .subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.datetime {
+    text-align: right;
+}
+
+#current-date {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+#current-time {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Main Content */
+main {
+    padding: 30px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+/* Panel Kiri */
+.control-panel, .current-call, .operator-status, .queue-display {
+    background-color: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eaeaea;
+}
+
+.control-panel h3, .current-call h3, .operator-status h3, .queue-display h3, .queue-list h3 {
+    font-family: 'Poppins', sans-serif;
+    color: #1e3c72;
+    margin-bottom: 20px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #2a5298;
+    box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
+}
+
+.button-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+button {
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.btn-call {
+    background: linear-gradient(to right, #00b09b, #96c93d);
+    color: white;
+}
+
+.btn-next {
+    background: linear-gradient(to right, #ff8a00, #da1b60);
+    color: white;
+}
+
+.btn-reset {
+    background: linear-gradient(to right, #8e2de2, #4a00e0);
+    color: white;
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.volume-control label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+.volume-control input {
+    flex-grow: 1;
+}
+
+#volume-value {
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Panggilan Terakhir */
+.last-call-display {
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.call-number {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.call-operator {
+    font-size: 22px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.call-time {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* Panel Kanan */
+.operator-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.operator-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    border: 2px solid #eaeaea;
+    transition: all 0.3s;
+}
+
+.operator-card.active {
+    border-color: #00b09b;
+    background-color: #f0fff4;
+}
+
+.operator-card h4 {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.operator-card .op-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 5px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.operator-card .op-status {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.operator-card .op-status.available {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.operator-card .op-status.busy {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Display Antrian */
+.display-screen {
+    background-color: #111;
+    border-radius: 15px;
+    overflow: hidden;
+    border: 10px solid #333;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.display-header {
+    background-color: #1e3c72;
+    color: white;
+    text-align: center;
+    padding: 15px;
+}
+
+.display-header h4 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+}
+
+.display-content {
+    padding: 30px;
+    text-align: center;
+}
+
+.display-number {
+    font-size: 80px;
+    font-weight: 700;
+    color: #ffcc00;
+    font-family: 'Poppins', sans-serif;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+    margin-bottom: 10px;
+}
+
+.display-operator {
+    font-size: 32px;
+    color: #00b09b;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.display-info p {
+    color: #ddd;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+/* Daftar Antrian */
+.queue-list {
+    background-color: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eaeaea;
+}
+
+.list-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1.5fr 1fr;
+    background-color: #1e3c72;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+
+.list-container {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.queue-item {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1.5fr 1fr;
+    padding: 12px 20px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+}
+
+.queue-item:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.queue-item.called {
+    background-color: #e8f5e9;
+    border-left: 5px solid #00b09b;
+}
+
+.queue-status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.status-waiting {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-called {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Footer */
+footer {
+    background-color: #1e3c72;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+footer p {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.footer-icons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 15px;
+    font-size: 18px;
+    color: #a3c4ff;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .dashboard {
+        grid-template-columns: 1fr;
     }
     
-    function setupSpeech() {
-        // Setup Web Speech API dengan konfigurasi untuk suara wanita
-        console.log("Menyiapkan sistem suara...");
-        
-        // Coba dapatkan suara wanita
-        setTimeout(() => {
-            const speech = window.speechSynthesis;
-            const voices = speech.getVoices();
-            
-            console.log("Suara yang tersedia:");
-            voices.forEach(voice => {
-                console.log(`- ${voice.name} (${voice.lang})`);
-            });
-            
-            // Cari suara wanita
-            const femaleVoices = voices.filter(v => 
-                v.name.toLowerCase().includes('female') || 
-                v.name.toLowerCase().includes('woman') ||
-                v.name.toLowerCase().includes('zira') ||
-                v.name.toLowerCase().includes('samantha') ||
-                (v.lang === 'id-ID' && !v.name.toLowerCase().includes('male'))
-            );
-            
-            if (femaleVoices.length > 0) {
-                console.log(`✅ Ditemukan ${femaleVoices.length} suara wanita`);
-                elements.statusText.textContent = "Suara wanita siap!";
-            } else {
-                console.log("⚠️ Tidak menemukan suara wanita, menggunakan default");
-                elements.statusText.textContent = "Menggunakan suara default";
-            }
-        }, 1000);
+    .operator-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
     }
     
-    function updateDateTime() {
-        const now = new Date();
-        const date = now.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        const time = now.toLocaleTimeString('id-ID');
-        elements.dateTime.textContent = `${date} ${time}`;
+    .logo-container {
+        flex-direction: column;
+        text-align: center;
     }
     
-    function setupEventListeners() {
-        // Kontrol nomor
-        elements.decreaseBtn.addEventListener('click', () => {
-            if (elements.queueNumber.value > 1) {
-                elements.queueNumber.value = parseInt(elements.queueNumber.value) - 1;
-            }
-        });
-        
-        elements.increaseBtn.addEventListener('click', () => {
-            elements.queueNumber.value = parseInt(elements.queueNumber.value) + 1;
-        });
-        
-        elements.resetBtn.addEventListener('click', () => {
-            elements.queueNumber.value = 1;
-        });
-        
-        // Tombol utama
-        elements.callBtn.addEventListener('click', callQueue);
-        elements.nextBtn.addEventListener('click', nextQueue);
-        elements.skipBtn.addEventListener('click', skipQueue);
-        
-        // Volume
-        elements.volumeControl.addEventListener('input', function() {
-            volume = parseFloat(this.value);
-        });
-        
-        // Toggle suara
-        elements.toggleVoiceBtn.addEventListener('click', function() {
-            useFemaleVoice = !useFemaleVoice;
-            elements.voiceTypeIndicator.textContent = useFemaleVoice ? "WANITA" : "PRIA";
-            elements.voiceTypeIndicator.style.color = useFemaleVoice ? "#d53f8c" : "#2a5298";
-            
-            // Test suara
-            testVoice();
-        });
-        
-        // History
-        elements.clearHistoryBtn.addEventListener('click', clearHistory);
-        
-        // Queue
-        elements.addQueueBtn.addEventListener('click', addToQueue);
-        elements.generateQueueBtn.addEventListener('click', generateRandomQueue);
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.code === 'Space' && !e.target.matches('input, select, textarea')) {
-                e.preventDefault();
-                callQueue();
-            }
-        });
+    .datetime {
+        text-align: center;
     }
     
-    function callQueue() {
-        const queueNumber = parseInt(elements.queueNumber.value);
-        const operatorId = parseInt(elements.operator.value);
-        const operator = operators.find(op => op.id === operatorId);
-        
-        if (!operator) return;
-        
-        // Update operator
-        operator.status = "busy";
-        operator.currentNumber = queueNumber;
-        
-        // Update display
-        elements.currentNumber.textContent = queueNumber;
-        elements.currentOperator.textContent = operator.name;
-        elements.currentTime.textContent = new Date().toLocaleTimeString('id-ID');
-        elements.statusText.textContent = "Memanggil antrian...";
-        elements.statusIndicator.style.backgroundColor = "#f6ad55";
-        
-        // Add history
-        callHistory.unshift({
-            number: queueNumber,
-            operator: operator.name,
-            time: new Date().toLocaleTimeString('id-ID')
-        });
-        renderCallHistory();
-        
-        // Speak
-        speakQueue(queueNumber, operator.name);
-        
-        // Update UI
-        renderOperators();
-        updateTotalQueue();
-        
-        // Increment
-        elements.queueNumber.value = queueNumber + 1;
-        currentQueueNumber = queueNumber + 1;
-        
-        // Remove from waiting
-        removeFromWaitingQueue(queueNumber);
-        
-        saveToLocalStorage();
-        
-        // Reset status
-        setTimeout(() => {
-            elements.statusText.textContent = "Sistem siap";
-            elements.statusIndicator.style.backgroundColor = "#48bb78";
-        }, 5000);
+    .operator-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    function speakQueue(queueNumber, operatorName) {
-        const operatorSimple = operatorName.split(' - ')[0];
-        const text = `Nomor antrian ${queueNumber}, silakan menuju ${operatorSimple}. Terima kasih.`;
-        
-        speakText(text);
+    .list-header, .queue-item {
+        grid-template-columns: 1fr 1.5fr 1fr 1fr;
+        font-size: 14px;
     }
     
-    function speakText(text) {
-        const speech = window.speechSynthesis;
-        
-        // Cancel if speaking
-        if (speech.speaking) {
-            speech.cancel();
-        }
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.volume = volume;
-        utterance.rate = useFemaleVoice ? 0.85 : 0.9; // Lebih lambat untuk wanita
-        utterance.pitch = useFemaleVoice ? 1.3 : 1.0; // Pitch tinggi untuk wanita
-        
-        // Cari suara berdasarkan jenis
-        const voices = speech.getVoices();
-        
-        if (useFemaleVoice) {
-            // Prioritas: suara wanita Indonesia
-            let femaleVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female'));
-            
-            if (!femaleVoice) {
-                // Cari suara wanita bahasa Inggris
-                femaleVoice = voices.find(v => 
-                    v.name.toLowerCase().includes('female') || 
-                    v.name.toLowerCase().includes('zira') ||
-                    v.name.toLowerCase().includes('samantha')
-                );
-            }
-            
-            if (!femaleVoice) {
-                // Cari suara dengan bahasa Indonesia
-                femaleVoice = voices.find(v => v.lang === 'id-ID');
-            }
-            
-            if (femaleVoice) {
-                utterance.voice = femaleVoice;
-                utterance.lang = femaleVoice.lang;
-                console.log(`Menggunakan suara wanita: ${femaleVoice.name}`);
-            }
-        } else {
-            // Untuk suara pria, gunakan default atau cari suara pria
-            let maleVoice = voices.find(v => v.name.toLowerCase().includes('male'));
-            
-            if (maleVoice) {
-                utterance.voice = maleVoice;
-                utterance.pitch = 0.9; // Pitch lebih rendah
-            }
-        }
-        
-        // Events
-        utterance.onstart = function() {
-            console.log("Mulai berbicara:", text);
-        };
-        
-        utterance.onend = function() {
-            console.log("Selesai berbicara");
-        };
-        
-        utterance.onerror = function(event) {
-            console.error("Error:", event);
-            
-            // Fallback: coba dengan Google TTS
-            if (useFemaleVoice) {
-                const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=${encodeURIComponent(text)}`);
-                audio.volume = volume;
-                audio.play();
-            }
-        };
-        
-        speech.speak(utterance);
+    .display-number {
+        font-size: 60px;
     }
     
-    function testVoice() {
-        const testText = useFemaleVoice 
-            ? "Ini adalah suara wanita untuk sistem antrian." 
-            : "Ini adalah suara pria untuk sistem antrian.";
-        
-        speakText(testText);
+    .display-operator {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 15px;
     }
     
-    function nextQueue() {
-        elements.queueNumber.value = parseInt(elements.queueNumber.value) + 1;
+    .control-panel, .current-call, .operator-status, .queue-display, .queue-list {
+        padding: 15px;
     }
     
-    function skipQueue() {
-        const currentNumber = parseInt(elements.queueNumber.value);
-        
-        callHistory.unshift({
-            number: currentNumber,
-            operator: "Dilewati",
-            time: new Date().toLocaleTimeString('id-ID')
-        });
-        
-        renderCallHistory();
-        elements.queueNumber.value = currentNumber + 1;
-        elements.statusText.textContent = "Antrian dilewati";
-        
-        speakText(`Nomor antrian ${currentNumber} dilewati.`);
-        
-        setTimeout(() => {
-            elements.statusText.textContent = "Sistem siap";
-        }, 3000);
-        
-        saveToLocalStorage();
+    .operator-grid {
+        grid-template-columns: 1fr;
     }
     
-    // Fungsi render dan lainnya tetap sama seperti sebelumnya
-    function renderCallHistory() {
-        elements.callHistory.innerHTML = '';
-        
-        if (callHistory.length === 0) {
-            elements.callHistory.innerHTML = `
-                <div class="empty-history">
-                    <i class="fas fa-history"></i>
-                    <p>Belum ada riwayat panggilan</p>
-                </div>
-            `;
-            return;
-        }
-        
-        callHistory.forEach(record => {
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `
-                <div class="history-number">${record.number}</div>
-                <div class="history-operator">${record.operator}</div>
-                <div class="history-time">${record.time}</div>
-            `;
-            elements.callHistory.appendChild(div);
-        });
+    .list-header, .queue-item {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
     }
     
-    function renderOperators() {
-        elements.operatorsContainer.innerHTML = '';
-        
-        operators.forEach(operator => {
-            const div = document.createElement('div');
-            div.className = `operator-card ${operator.status}`;
-            div.innerHTML = `
-                <div class="operator-number">${operator.id}</div>
-                <div class="operator-name">${operator.name.split(' - ')[0]}</div>
-                <div class="operator-status ${operator.status === 'available' ? 'status-available' : 'status-busy'}">
-                    ${operator.status === 'available' ? 'Tersedia' : 'Sedang Melayani'}
-                </div>
-                ${operator.currentNumber ? `<div class="operator-queue">Antrian: ${operator.currentNumber}</div>` : ''}
-            `;
-            
-            div.addEventListener('click', () => {
-                elements.operator.value = operator.id;
-            });
-            
-            elements.operatorsContainer.appendChild(div);
-        });
+    .button-group {
+        grid-template-columns: 1fr;
     }
-    
-    function renderWaitingQueue() {
-        elements.queueList.innerHTML = '';
-        
-        if (waitingQueue.length === 0) {
-            elements.queueList.innerHTML = `
-                <div class="empty-queue">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>Tidak ada antrian menunggu</p>
-                </div>
-            `;
-            return;
-        }
-        
-        waitingQueue.forEach((item, index) => {
-            const div = document.createElement('div');
-            div.className = 'queue-item';
-            div.innerHTML = `
-                <div class="queue-item-number">${item.number}</div>
-                <div class="queue-item-operator">${item.operatorName}</div>
-                <div class="queue-item-actions">
-                    <button class="call-now-btn" data-index="${index}">
-                        <i class="fas fa-bullhorn"></i> Panggil
-                    </button>
-                    <button class="remove-queue-btn" data-index="${index}">
-                        <i class="fas fa-trash-alt"></i> Hapus
-                    </button>
-                </div>
-            `;
-            
-            elements.queueList.appendChild(div);
-        });
-        
-        // Add event listeners
-        document.querySelectorAll('.call-now-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                callFromQueue(index);
-            });
-        });
-        
-        document.querySelectorAll('.remove-queue-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                removeFromWaitingQueueByIndex(index);
-            });
-        });
-    }
-    
-    function callFromQueue(index) {
-        if (index >= 0 && index < waitingQueue.length) {
-            const item = waitingQueue[index];
-            elements.queueNumber.value = item.number;
-            elements.operator.value = item.operatorId;
-            callQueue();
-        }
-    }
-    
-    function addToQueue() {
-        const queueNumber = parseInt(elements.queueNumber.value);
-        const operatorId = parseInt(elements.operator.value);
-        const operator = operators.find(op => op.id === operatorId);
-        
-        if (waitingQueue.some(item => item.number === queueNumber)) {
-            alert(`Nomor antrian ${queueNumber} sudah ada!`);
-            return;
-        }
-        
-        waitingQueue.push({
-            number: queueNumber,
-            operatorId: operatorId,
-            operatorName: operator.name,
-            addedAt: new Date()
-        });
-        
-        waitingQueue.sort((a, b) => a.number - b.number);
-        renderWaitingQueue();
-        updateTotalQueue();
-        elements.queueNumber.value = queueNumber + 1;
-        
-        saveToLocalStorage();
-    }
-    
-    function generateRandomQueue() {
-        for (let i = 0; i < 5; i++) {
-            const randomNumber = Math.floor(Math.random() * 50) + 1;
-            const randomOperator = Math.floor(Math.random() * 8) + 1;
-            const operator = operators.find(op => op.id === randomOperator);
-            
-            if (!waitingQueue.some(item => item.number === randomNumber)) {
-                waitingQueue.push({
-                    number: randomNumber,
-                    operatorId: randomOperator,
-                    operatorName: operator.name,
-                    addedAt: new Date()
-                });
-            }
-        }
-        
-        waitingQueue.sort((a, b) => a.number - b.number);
-        renderWaitingQueue();
-        updateTotalQueue();
-        saveToLocalStorage();
-    }
-    
-    function generateInitialQueue() {
-        if (waitingQueue.length === 0) {
-            const demo = [
-                { number: 5, operatorId: 1, operatorName: "Operator 1 - Pendaftaran" },
-                { number: 8, operatorId: 2, operatorName: "Operator 2 - Verifikasi Berkas" },
-                { number: 12, operatorId: 3, operatorName: "Operator 3 - Tes Akademik" },
-                { number: 15, operatorId: 4, operatorName: "Operator 4 - Wawancara" }
-            ];
-            
-            demo.forEach(item => {
-                waitingQueue.push({
-                    ...item,
-                    addedAt: new Date()
-                });
-            });
-            
-            renderWaitingQueue();
-            updateTotalQueue();
-        }
-    }
-    
-    function removeFromWaitingQueue(queueNumber) {
-        const index = waitingQueue.findIndex(item => item.number === queueNumber);
-        if (index !== -1) {
-            waitingQueue.splice(index, 1);
-            renderWaitingQueue();
-            updateTotalQueue();
-            saveToLocalStorage();
-        }
-    }
-    
-    function removeFromWaitingQueueByIndex(index) {
-        if (index >= 0 && index < waitingQueue.length) {
-            waitingQueue.splice(index, 1);
-            renderWaitingQueue();
-            updateTotalQueue();
-            saveToLocalStorage();
-        }
-    }
-    
-    function updateTotalQueue() {
-        elements.totalQueue.textContent = waitingQueue.length;
-    }
-    
-    function clearHistory() {
-        if (confirm("Hapus semua riwayat?")) {
-            callHistory = [];
-            renderCallHistory();
-            saveToLocalStorage();
-        }
-    }
-    
-    function saveToLocalStorage() {
-        const data = {
-            currentQueueNumber: currentQueueNumber,
-            callHistory: callHistory,
-            waitingQueue: waitingQueue
-        };
-        localStorage.setItem('antrianSPMB', JSON.stringify(data));
-    }
-    
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem('antrianSPMB');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                currentQueueNumber = data.currentQueueNumber || 1;
-                callHistory = data.callHistory || [];
-                waitingQueue = data.waitingQueue || [];
-                
-                elements.queueNumber.value = currentQueueNumber;
-                renderCallHistory();
-            } catch (e) {
-                console.error("Error loading data:", e);
-            }
-        }
-    }
-});
+}
