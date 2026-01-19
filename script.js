@@ -1,498 +1,376 @@
-/* Reset dan Base Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+// Data dan state aplikasi
+let queueData = {
+    currentNumber: 1,
+    lastCalled: null,
+    operators: [
+        { id: 1, name: "Operator 1 - Pendaftaran", status: "available", currentQueue: null },
+        { id: 2, name: "Operator 2 - Berkas", status: "available", currentQueue: null },
+        { id: 3, name: "Operator 3 - Wawancara", status: "available", currentQueue: null },
+        { id: 4, name: "Operator 4 - Tes Akademik", status: "available", currentQueue: null },
+        { id: 5, name: "Operator 5 - Tes Kesehatan", status: "available", currentQueue: null },
+        { id: 6, name: "Operator 6 - Pembayaran", status: "available", currentQueue: null },
+        { id: 7, name: "Operator 7 - Pengumuman", status: "available", currentQueue: null },
+        { id: 8, name: "Operator 8 - Konsultasi", status: "available", currentQueue: null }
+    ],
+    queueHistory: []
+};
+
+// Inisialisasi Speech Synthesis
+const speech = window.speechSynthesis;
+let voices = [];
+let selectedVoice = null;
+
+// DOM Elements
+const queueNumberInput = document.getElementById('queue-number');
+const operatorSelect = document.getElementById('operator');
+const callBtn = document.getElementById('call-btn');
+const nextBtn = document.getElementById('next-btn');
+const resetBtn = document.getElementById('reset-btn');
+const volumeSlider = document.getElementById('volume');
+const volumeValue = document.getElementById('volume-value');
+const lastNumberDisplay = document.getElementById('last-number');
+const lastOperatorDisplay = document.getElementById('last-operator');
+const lastTimeDisplay = document.getElementById('last-time');
+const displayNumber = document.getElementById('display-number');
+const displayOperator = document.getElementById('display-operator');
+const operatorGrid = document.getElementById('operator-grid');
+const queueListContainer = document.getElementById('queue-list-container');
+const callSound = document.getElementById('call-sound');
+const currentDate = document.getElementById('current-date');
+const currentTime = document.getElementById('current-time');
+
+// Initialize the application
+function init() {
+    // Set tanggal dan waktu
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
+    // Load data dari localStorage jika ada
+    loadFromLocalStorage();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Setup suara
+    setupSpeech();
+    
+    // Render operator grid
+    renderOperatorGrid();
+    
+    // Render queue list
+    renderQueueList();
+    
+    // Update display
+    updateDisplay();
 }
 
-body {
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    color: #333;
-    line-height: 1.6;
-    min-height: 100vh;
-    padding: 10px;
+// Update tanggal dan waktu
+function updateDateTime() {
+    const now = new Date();
+    
+    // Format tanggal
+    const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = now.toLocaleDateString('id-ID', optionsDate);
+    currentDate.textContent = formattedDate;
+    
+    // Format waktu
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    currentTime.textContent = `${hours}:${minutes}:${seconds}`;
 }
 
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    background-color: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+// Setup event listeners
+function setupEventListeners() {
+    // Panggil antrian
+    callBtn.addEventListener('click', callQueue);
+    
+    // Antrian selanjutnya
+    nextBtn.addEventListener('click', nextQueue);
+    
+    // Reset antrian
+    resetBtn.addEventListener('click', resetQueue);
+    
+    // Volume control
+    volumeSlider.addEventListener('input', updateVolume);
+    
+    // Input nomor antrian hanya menerima angka
+    queueNumberInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value < 1) this.value = 1;
+        if (this.value > 999) this.value = 999;
+    });
 }
 
-/* Header */
-header {
-    background: linear-gradient(to right, #1e3c72, #2a5298);
-    color: white;
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+// Setup suara text-to-speech
+function setupSpeech() {
+    // Tunggu sampai voices tersedia
+    speech.onvoiceschanged = function() {
+        voices = speech.getVoices();
+        
+        // Cari voice wanita dalam bahasa Indonesia atau Inggris
+        selectedVoice = voices.find(voice => 
+            voice.lang.includes('id') || 
+            voice.lang.includes('en') ||
+            voice.name.toLowerCase().includes('female')
+        ) || voices[0];
+    };
 }
 
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+// Update volume
+function updateVolume() {
+    const volume = volumeSlider.value;
+    volumeValue.textContent = `${Math.round(volume * 100)}%`;
+    callSound.volume = volume;
 }
 
-.logo {
-    background-color: white;
-    color: #2a5298;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.header-text h1 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.header-text h2 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 5px;
-}
-
-.header-text .subtitle {
-    font-size: 14px;
-    opacity: 0.9;
-}
-
-.datetime {
-    text-align: right;
-}
-
-#current-date {
-    font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 5px;
-}
-
-#current-time {
-    font-size: 28px;
-    font-weight: 700;
-    font-family: 'Poppins', sans-serif;
-}
-
-/* Main Content */
-main {
-    padding: 30px;
-}
-
-.dashboard {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 30px;
-    margin-bottom: 30px;
-}
-
-/* Panel Kiri */
-.control-panel, .current-call, .operator-status, .queue-display {
-    background-color: #f8f9fa;
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eaeaea;
-}
-
-.control-panel h3, .current-call h3, .operator-status h3, .queue-display h3, .queue-list h3 {
-    font-family: 'Poppins', sans-serif;
-    color: #1e3c72;
-    margin-bottom: 20px;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #444;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.form-group input, .form-group select {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    transition: all 0.3s;
-}
-
-.form-group input:focus, .form-group select:focus {
-    outline: none;
-    border-color: #2a5298;
-    box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
-}
-
-.button-group {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-button {
-    padding: 15px;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-button:active {
-    transform: translateY(0);
-}
-
-.btn-call {
-    background: linear-gradient(to right, #00b09b, #96c93d);
-    color: white;
-}
-
-.btn-next {
-    background: linear-gradient(to right, #ff8a00, #da1b60);
-    color: white;
-}
-
-.btn-reset {
-    background: linear-gradient(to right, #8e2de2, #4a00e0);
-    color: white;
-}
-
-.volume-control {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 25px;
-}
-
-.volume-control label {
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 120px;
-}
-
-.volume-control input {
-    flex-grow: 1;
-}
-
-#volume-value {
-    min-width: 40px;
-    text-align: right;
-}
-
-/* Panggilan Terakhir */
-.last-call-display {
-    background: linear-gradient(to right, #1e3c72, #2a5298);
-    color: white;
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-}
-
-.call-number {
-    font-size: 42px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.call-operator {
-    font-size: 22px;
-    margin-bottom: 10px;
-    font-weight: 500;
-}
-
-.call-time {
-    font-size: 16px;
-    opacity: 0.9;
-}
-
-/* Panel Kanan */
-.operator-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-}
-
-.operator-card {
-    background-color: white;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-    border: 2px solid #eaeaea;
-    transition: all 0.3s;
-}
-
-.operator-card.active {
-    border-color: #00b09b;
-    background-color: #f0fff4;
-}
-
-.operator-card h4 {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 5px;
-}
-
-.operator-card .op-number {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1e3c72;
-    margin-bottom: 5px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.operator-card .op-status {
-    font-size: 12px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    display: inline-block;
-}
-
-.operator-card .op-status.available {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.operator-card .op-status.busy {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* Display Antrian */
-.display-screen {
-    background-color: #111;
-    border-radius: 15px;
-    overflow: hidden;
-    border: 10px solid #333;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.display-header {
-    background-color: #1e3c72;
-    color: white;
-    text-align: center;
-    padding: 15px;
-}
-
-.display-header h4 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 20px;
-    letter-spacing: 2px;
-}
-
-.display-content {
-    padding: 30px;
-    text-align: center;
-}
-
-.display-number {
-    font-size: 80px;
-    font-weight: 700;
-    color: #ffcc00;
-    font-family: 'Poppins', sans-serif;
-    text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
-    margin-bottom: 10px;
-}
-
-.display-operator {
-    font-size: 32px;
-    color: #00b09b;
-    font-weight: 600;
-    margin-bottom: 20px;
-}
-
-.display-info p {
-    color: #ddd;
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-
-/* Daftar Antrian */
-.queue-list {
-    background-color: #f8f9fa;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eaeaea;
-}
-
-.list-header {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1.5fr 1fr;
-    background-color: #1e3c72;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    font-weight: 500;
-    margin-bottom: 15px;
-}
-
-.list-container {
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-.queue-item {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1.5fr 1fr;
-    padding: 12px 20px;
-    border-bottom: 1px solid #eee;
-    align-items: center;
-}
-
-.queue-item:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-.queue-item.called {
-    background-color: #e8f5e9;
-    border-left: 5px solid #00b09b;
-}
-
-.queue-status {
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    text-align: center;
-}
-
-.status-waiting {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.status-called {
-    background-color: #d1ecf1;
-    color: #0c5460;
-}
-
-/* Footer */
-footer {
-    background-color: #1e3c72;
-    color: white;
-    text-align: center;
-    padding: 20px;
-    margin-top: 20px;
-}
-
-footer p {
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.footer-icons {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 15px;
-    font-size: 18px;
-    color: #a3c4ff;
-}
-
-/* Responsive */
-@media (max-width: 1200px) {
-    .dashboard {
-        grid-template-columns: 1fr;
+// Panggil antrian
+function callQueue() {
+    const queueNumber = parseInt(queueNumberInput.value);
+    const operatorId = parseInt(operatorSelect.value);
+    const operator = queueData.operators.find(op => op.id === operatorId);
+    
+    // Validasi
+    if (!queueNumber || !operator) {
+        alert('Silakan masukkan nomor antrian dan pilih operator');
+        return;
     }
     
-    .operator-grid {
-        grid-template-columns: repeat(4, 1fr);
+    // Update status operator
+    operator.status = "busy";
+    operator.currentQueue = queueNumber;
+    
+    // Update data panggilan terakhir
+    const now = new Date();
+    const callTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    queueData.lastCalled = {
+        number: queueNumber,
+        operator: operator.name,
+        time: callTime
+    };
+    
+    // Tambahkan ke history
+    queueData.queueHistory.unshift({
+        number: queueNumber,
+        operator: operator.name,
+        time: callTime,
+        status: 'called'
+    });
+    
+    // Update display
+    updateLastCallDisplay();
+    renderOperatorGrid();
+    renderQueueList();
+    updateDisplay();
+    
+    // Mainkan suara panggilan
+    playCallSound();
+    
+    // Ucapkan nomor antrian
+    speakQueueCall(queueNumber, operator.name);
+    
+    // Simpan ke localStorage
+    saveToLocalStorage();
+    
+    // Auto increment untuk antrian berikutnya
+    queueNumberInput.value = queueNumber + 1;
+}
+
+// Antrian selanjutnya (auto increment)
+function nextQueue() {
+    // Ambil nomor antrian berikutnya
+    const nextNumber = parseInt(queueNumberInput.value) + 1;
+    queueNumberInput.value = nextNumber;
+    
+    // Pilih operator berikutnya (berputar)
+    const currentOperator = parseInt(operatorSelect.value);
+    const nextOperator = currentOperator < 8 ? currentOperator + 1 : 1;
+    operatorSelect.value = nextOperator;
+    
+    // Fokus ke tombol panggil
+    callBtn.focus();
+}
+
+// Reset antrian
+function resetQueue() {
+    if (confirm('Apakah Anda yakin ingin mereset semua antrian? Data akan dihapus permanen.')) {
+        // Reset data
+        queueData = {
+            currentNumber: 1,
+            lastCalled: null,
+            operators: queueData.operators.map(op => ({
+                ...op,
+                status: "available",
+                currentQueue: null
+            })),
+            queueHistory: []
+        };
+        
+        // Reset input
+        queueNumberInput.value = 1;
+        operatorSelect.value = 1;
+        
+        // Update tampilan
+        updateLastCallDisplay();
+        renderOperatorGrid();
+        renderQueueList();
+        updateDisplay();
+        
+        // Hapus dari localStorage
+        localStorage.removeItem('queueData');
+        
+        alert('Semua antrian telah direset.');
     }
 }
 
-@media (max-width: 768px) {
-    header {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
-    }
-    
-    .logo-container {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .datetime {
-        text-align: center;
-    }
-    
-    .operator-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .list-header, .queue-item {
-        grid-template-columns: 1fr 1.5fr 1fr 1fr;
-        font-size: 14px;
-    }
-    
-    .display-number {
-        font-size: 60px;
-    }
-    
-    .display-operator {
-        font-size: 24px;
+// Update tampilan panggilan terakhir
+function updateLastCallDisplay() {
+    if (queueData.lastCalled) {
+        lastNumberDisplay.textContent = String(queueData.lastCalled.number).padStart(3, '0');
+        lastOperatorDisplay.textContent = queueData.lastCalled.operator;
+        lastTimeDisplay.textContent = queueData.lastCalled.time;
+        
+        displayNumber.textContent = String(queueData.lastCalled.number).padStart(3, '0');
+        displayOperator.textContent = queueData.lastCalled.operator.split(' - ')[0];
+    } else {
+        lastNumberDisplay.textContent = '-';
+        lastOperatorDisplay.textContent = '-';
+        lastTimeDisplay.textContent = '-';
     }
 }
 
-@media (max-width: 480px) {
-    main {
-        padding: 15px;
+// Render grid operator
+function renderOperatorGrid() {
+    operatorGrid.innerHTML = '';
+    
+    queueData.operators.forEach(operator => {
+        const operatorCard = document.createElement('div');
+        operatorCard.className = `operator-card ${operator.status === 'busy' ? 'active' : ''}`;
+        
+        operatorCard.innerHTML = `
+            <h4>${operator.name.split(' - ')[0]}</h4>
+            <div class="op-number">${operator.id}</div>
+            <div class="op-status ${operator.status}">
+                ${operator.status === 'available' ? 'Tersedia' : 'Sedang Melayani'}
+            </div>
+            ${operator.currentQueue ? `<div class="op-current-queue">Antrian: ${String(operator.currentQueue).padStart(3, '0')}</div>` : ''}
+        `;
+        
+        operatorGrid.appendChild(operatorCard);
+    });
+}
+
+// Render daftar antrian
+function renderQueueList() {
+    queueListContainer.innerHTML = '';
+    
+    // Jika tidak ada history, tampilkan pesan
+    if (queueData.queueHistory.length === 0) {
+        queueListContainer.innerHTML = '<div class="queue-item" style="text-align: center; grid-column: 1 / -1; padding: 20px; color: #666;">Belum ada antrian yang dipanggil hari ini.</div>';
+        return;
     }
     
-    .control-panel, .current-call, .operator-status, .queue-display, .queue-list {
-        padding: 15px;
-    }
+    // Tampilkan maksimal 10 antrian terakhir
+    const recentHistory = queueData.queueHistory.slice(0, 10);
     
-    .operator-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .list-header, .queue-item {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-    
-    .button-group {
-        grid-template-columns: 1fr;
+    recentHistory.forEach(item => {
+        const queueItem = document.createElement('div');
+        queueItem.className = `queue-item ${item.status === 'called' ? 'called' : ''}`;
+        
+        queueItem.innerHTML = `
+            <span>${String(item.number).padStart(3, '0')}</span>
+            <span>${item.operator}</span>
+            <span>${item.time}</span>
+            <span class="queue-status ${item.status === 'called' ? 'status-called' : 'status-waiting'}">
+                ${item.status === 'called' ? 'Dipanggil' : 'Menunggu'}
+            </span>
+        `;
+        
+        queueListContainer.appendChild(queueItem);
+    });
+}
+
+// Update display utama
+function updateDisplay() {
+    // Jika ada panggilan terakhir, tampilkan
+    if (queueData.lastCalled) {
+        displayNumber.textContent = String(queueData.lastCalled.number).padStart(3, '0');
+        displayOperator.textContent = queueData.lastCalled.operator.split(' - ')[0];
     }
 }
+
+// Mainkan suara panggilan
+function playCallSound() {
+    callSound.currentTime = 0;
+    callSound.play().catch(e => console.log("Autoplay prevented:", e));
+}
+
+// Ucapkan panggilan antrian
+function speakQueueCall(queueNumber, operatorName) {
+    // Hentikan ucapaan yang sedang berjalan
+    speech.cancel();
+    
+    // Format nomor antrian menjadi digit per digit
+    const numberStr = String(queueNumber);
+    const digits = numberStr.split('').join(' ');
+    
+    // Buat teks untuk diucapkan
+    const operatorSimple = operatorName.split(' - ')[0];
+    const text = `Nomor antrian ${digits}, silahkan menuju ke ${operatorSimple}`;
+    
+    // Buat utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = selectedVoice;
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = volumeSlider.value;
+    
+    // Ucapkan
+    speech.speak(utterance);
+}
+
+// Simpan ke localStorage
+function saveToLocalStorage() {
+    localStorage.setItem('queueData', JSON.stringify(queueData));
+}
+
+// Load dari localStorage
+function loadFromLocalStorage() {
+    const savedData = localStorage.getItem('queueData');
+    
+    if (savedData) {
+        try {
+            const parsedData = JSON.parse(savedData);
+            queueData = parsedData;
+            
+            // Update input fields berdasarkan data yang disimpan
+            if (queueData.lastCalled) {
+                queueNumberInput.value = queueData.lastCalled.number + 1;
+            }
+        } catch (e) {
+            console.error('Error loading saved data:', e);
+        }
+    }
+}
+
+// Inisialisasi aplikasi saat halaman dimuat
+document.addEventListener('DOMContentLoaded', init);
+
+// Tambahkan beberapa data contoh untuk demo
+setTimeout(() => {
+    // Jika tidak ada data, tambahkan beberapa contoh
+    if (queueData.queueHistory.length === 0) {
+        const now = new Date();
+        const exampleTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        // Contoh data untuk demo
+        queueData.queueHistory = [
+            { number: 5, operator: 'Operator 1 - Pendaftaran', time: exampleTime, status: 'called' },
+            { number: 4, operator: 'Operator 3 - Wawancara', time: exampleTime, status: 'called' },
+            { number: 3, operator: 'Operator 6 - Pembayaran', time: exampleTime, status: 'called' },
+        ];
+        
+        renderQueueList();
+    }
+}, 1000);
