@@ -6,7 +6,10 @@
     <title>Sistem Antrian SPMB - SMA Negeri 1 Magetan</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://img.icons8.com/color/48/000000/school-building.png">
 </head>
 <body>
     <div class="container">
@@ -16,143 +19,127 @@
                     <i class="fas fa-school"></i>
                 </div>
                 <div class="header-text">
-                    <h1>SMA Negeri 1 Magetan</h1>
-                    <h2>Sistem Antrian SPMB</h2>
-                    <p class="subtitle">Seleksi Penerimaan Murid Baru Tahun Ajaran 2024/2025</p>
+                    <h1>SMA NEGERI 1 MAGETAN</h1>
+                    <h2>Sistem Antrian Penerimaan Peserta Didik Baru</h2>
+                    <p class="subtitle">Tahun Ajaran 2024/2025</p>
                 </div>
             </div>
-            <div class="datetime-display">
-                <div id="date-time"></div>
-                <div class="info-box">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Antrian Hari Ini: <span id="total-queue">0</span></span>
-                </div>
+            <div class="datetime">
+                <div id="current-date"></div>
+                <div id="current-time"></div>
             </div>
         </header>
 
         <main>
             <div class="dashboard">
-                <div class="left-panel">
-                    <div class="panel-section">
-                        <h3><i class="fas fa-sliders-h"></i> Panel Kontrol Antrian</h3>
-                        <div class="control-group">
-                            <div class="form-group">
-                                <label for="queue-number"><i class="fas fa-hashtag"></i> Nomor Antrian</label>
-                                <div class="input-with-buttons">
-                                    <input type="number" id="queue-number" min="1" value="1">
-                                    <div class="number-buttons">
-                                        <button type="button" id="decrease-number"><i class="fas fa-minus"></i></button>
-                                        <button type="button" id="increase-number"><i class="fas fa-plus"></i></button>
-                                        <button type="button" id="reset-number"><i class="fas fa-redo"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="operator"><i class="fas fa-user-tie"></i> Operator Tujuan</label>
-                                <div class="custom-select">
-                                    <select id="operator">
-                                        <option value="1">Operator 1 - Pendaftaran</option>
-                                        <option value="2">Operator 2 - Verifikasi Berkas</option>
-                                        <option value="3">Operator 3 - Tes Akademik</option>
-                                        <option value="4">Operator 4 - Wawancara</option>
-                                        <option value="5">Operator 5 - Pembayaran</option>
-                                        <option value="6">Operator 6 - Konsultasi</option>
-                                        <option value="7">Operator 7 - Pengumuman</option>
-                                        <option value="8">Operator 8 - Administrator</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="button-group">
-                                <button id="call-btn" class="btn-primary">
-                                    <i class="fas fa-bullhorn"></i> Panggil Antrian
-                                </button>
-                                <button id="next-btn" class="btn-secondary">
-                                    <i class="fas fa-forward"></i> Antrian Berikutnya
-                                </button>
-                                <button id="skip-btn" class="btn-warning">
-                                    <i class="fas fa-step-forward"></i> Lewati Antrian
-                                </button>
-                            </div>
-                            
-                            <div class="sound-control">
-                                <label for="volume-control"><i class="fas fa-volume-up"></i> Volume Suara</label>
-                                <input type="range" id="volume-control" min="0" max="1" step="0.1" value="0.8">
-                                <div class="volume-level">
-                                    <span class="low">Rendah</span>
-                                    <span class="high">Tinggi</span>
-                                </div>
-                                
-                                <div class="voice-type">
-                                    <p><strong>Suara: <span id="voice-type-indicator">WANITA</span></strong></p>
-                                    <button id="toggle-voice-btn" class="btn-small">
-                                        <i class="fas fa-exchange-alt"></i> Ganti Suara
-                                    </button>
-                                </div>
-                            </div>
+                <div class="panel-left">
+                    <section class="control-panel">
+                        <h3><i class="fas fa-cogs"></i> Panel Kontrol Antrian</h3>
+                        
+                        <div class="form-group">
+                            <label for="queue-number"><i class="fas fa-hashtag"></i> Nomor Antrian</label>
+                            <input type="number" id="queue-number" min="1" max="999" value="1">
                         </div>
-                    </div>
+                        
+                        <div class="form-group">
+                            <label for="operator"><i class="fas fa-user-tie"></i> Tujuan Operator</label>
+                            <select id="operator">
+                                <option value="1">Operator 1 - Pendaftaran</option>
+                                <option value="2">Operator 2 - Berkas</option>
+                                <option value="3">Operator 3 - Wawancara</option>
+                                <option value="4">Operator 4 - Tes Akademik</option>
+                                <option value="5">Operator 5 - Tes Kesehatan</option>
+                                <option value="6">Operator 6 - Pembayaran</option>
+                                <option value="7">Operator 7 - Pengumuman</option>
+                                <option value="8">Operator 8 - Konsultasi</option>
+                            </select>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button id="call-btn" class="btn-call">
+                                <i class="fas fa-bullhorn"></i> Panggil Antrian
+                            </button>
+                            <button id="next-btn" class="btn-next">
+                                <i class="fas fa-forward"></i> Antrian Selanjutnya
+                            </button>
+                            <button id="reset-btn" class="btn-reset">
+                                <i class="fas fa-redo"></i> Reset Antrian
+                            </button>
+                        </div>
+                        
+                        <div class="volume-control">
+                            <label for="volume"><i class="fas fa-volume-up"></i> Volume Suara</label>
+                            <input type="range" id="volume" min="0" max="1" step="0.1" value="0.7">
+                            <span id="volume-value">70%</span>
+                        </div>
+                    </section>
                     
-                    <div class="panel-section">
-                        <h3><i class="fas fa-history"></i> Riwayat Panggilan</h3>
-                        <div class="history-container">
-                            <div id="call-history"></div>
+                    <section class="current-call">
+                        <h3><i class="fas fa-bullhorn"></i> Panggilan Terakhir</h3>
+                        <div class="last-call-display">
+                            <div class="call-number" id="last-number">-</div>
+                            <div class="call-operator" id="last-operator">-</div>
+                            <div class="call-time" id="last-time">-</div>
                         </div>
-                        <button id="clear-history" class="btn-small">
-                            <i class="fas fa-trash-alt"></i> Hapus Riwayat
-                        </button>
-                    </div>
+                    </section>
                 </div>
                 
-                <div class="right-panel">
-                    <div class="current-call-display">
-                        <h3><i class="fas fa-bullhorn"></i> Panggilan Saat Ini</h3>
-                        <div class="call-card">
-                            <div class="call-number" id="current-number">--</div>
-                            <div class="call-operator" id="current-operator">--</div>
-                            <div class="call-time" id="current-time">--</div>
+                <div class="panel-right">
+                    <section class="operator-status">
+                        <h3><i class="fas fa-users"></i> Status Operator</h3>
+                        <div class="operator-grid" id="operator-grid">
+                            <!-- Operator status akan diisi oleh JavaScript -->
                         </div>
-                        <div class="status-indicator">
-                            <div class="status-dot" id="status-indicator"></div>
-                            <span id="status-text">Sistem Siap</span>
-                        </div>
-                    </div>
+                    </section>
                     
-                    <div class="operators-display">
-                        <h3><i class="fas fa-user-friends"></i> Status Operator</h3>
-                        <div class="operators-grid" id="operators-container">
-                            <!-- Operator cards will be generated by JavaScript -->
-                        </div>
-                    </div>
-                    
-                    <div class="queue-display">
-                        <h3><i class="fas fa-list-ol"></i> Antrian Menunggu</h3>
-                        <div class="queue-list" id="queue-list">
-                            <div class="empty-queue">
-                                <i class="fas fa-clipboard-list"></i>
-                                <p>Tidak ada antrian menunggu</p>
+                    <section class="queue-display">
+                        <h3><i class="fas fa-tv"></i> Display Antrian</h3>
+                        <div class="display-screen">
+                            <div class="display-header">
+                                <h4>ANTRIAN SAAT INI</h4>
+                            </div>
+                            <div class="display-content">
+                                <div class="display-number" id="display-number">001</div>
+                                <div class="display-operator" id="display-operator">OPERATOR 1</div>
+                                <div class="display-info">
+                                    <p>Silahkan menuju ke loket yang dituju</p>
+                                    <p>Terima kasih atas kesabaran Anda</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="queue-controls">
-                            <button id="add-queue-btn" class="btn-success">
-                                <i class="fas fa-plus-circle"></i> Tambah Antrian
-                            </button>
-                            <button id="generate-queue-btn" class="btn-info">
-                                <i class="fas fa-random"></i> Generate Antrian
-                            </button>
-                        </div>
-                    </div>
+                    </section>
+                </div>
+            </div>
+            
+            <div class="queue-list">
+                <h3><i class="fas fa-list-ol"></i> Daftar Antrian Hari Ini</h3>
+                <div class="list-header">
+                    <span>No. Antrian</span>
+                    <span>Operator</span>
+                    <span>Waktu Dipanggil</span>
+                    <span>Status</span>
+                </div>
+                <div class="list-container" id="queue-list-container">
+                    <!-- Daftar antrian akan diisi oleh JavaScript -->
                 </div>
             </div>
         </main>
         
         <footer>
-            <p>SMA Negeri 1 Magetan &copy; 2024 - Sistem Antrian Digital SPMB</p>
+            <p>© 2024 SMA Negeri 1 Magetan. Sistem Antrian SPMB v1.0</p>
+            <p>Jl. Pahlawan No. 123, Magetan, Jawa Timur | Telp: (0351) 123456</p>
+            <div class="footer-icons">
+                <i class="fas fa-phone"></i>
+                <i class="fas fa-envelope"></i>
+                <i class="fab fa-instagram"></i>
+                <i class="fab fa-facebook"></i>
+            </div>
         </footer>
     </div>
 
-    <!-- HANYA SCRIPT.JS SAJA -->
+    <!-- Audio untuk suara panggilan -->
+    <audio id="call-sound" src="https://assets.mixkit.co/active_storage/sfx/286/286-preview.mp3"></audio>
+    
     <script src="script.js"></script>
 </body>
 </html>
